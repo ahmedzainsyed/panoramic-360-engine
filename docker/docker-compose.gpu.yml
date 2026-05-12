@@ -1,0 +1,44 @@
+# ================================================================
+# Docker Compose - GPU Production
+# Extends prod with NVIDIA GPU support
+# ================================================================
+version: "3.9"
+
+include:
+  - docker/docker-compose.prod.yml
+
+services:
+  celery_worker:
+    deploy:
+      replicas: 2
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      CUDA_VISIBLE_DEVICES: "0"
+      USE_MIXED_PRECISION: "true"
+
+  # Triton Inference Server for optimized inference
+  triton:
+    image: nvcr.io/nvidia/tritonserver:24.01-py3
+    command: tritonserver --model-repository=/models --log-verbose=1
+    volumes:
+      - triton_models:/models
+    ports:
+      - "8001:8000"   # HTTP
+      - "8002:8001"   # gRPC
+      - "8003:8002"   # Metrics
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  triton_models:

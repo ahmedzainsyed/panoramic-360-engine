@@ -1,0 +1,32 @@
+stages:
+  preprocess_panoramas:
+    cmd: python scripts/data/process_panoramas.py --input datasets/raw --output datasets/processed
+    deps:
+      - scripts/data/process_panoramas.py
+      - datasets/raw
+    outs:
+      - datasets/processed
+    params:
+      - configs/training/segformer_config.yaml:
+        - data.image_size
+
+  train_segmentation:
+    cmd: python scripts/training/train_segmentation.py --config configs/training/segformer_config.yaml
+    deps:
+      - scripts/training/train_segmentation.py
+      - datasets/processed
+      - configs/training/segformer_config.yaml
+    outs:
+      - ml/models/segformer_latest.pth
+    metrics:
+      - reports/segmentation_metrics.json:
+          cache: false
+
+  evaluate:
+    cmd: python scripts/training/evaluate_models.py --model ml/models/segformer_latest.pth
+    deps:
+      - ml/models/segformer_latest.pth
+      - datasets/processed/test
+    metrics:
+      - reports/evaluation.json:
+          cache: false

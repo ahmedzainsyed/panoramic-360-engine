@@ -1,0 +1,28 @@
+name: "segformer_b5_construction"
+platform: "tensorrt_plan"
+max_batch_size: 4
+input [
+  {
+    name: "pixel_values"
+    data_type: TYPE_FP16
+    dims: [3, 512, 1024]
+  }
+]
+output [
+  {
+    name: "logits"
+    data_type: TYPE_FP16
+    dims: [21, 128, 256]
+  }
+]
+dynamic_batching {
+  preferred_batch_size: [1, 2, 4]
+  max_queue_delay_microseconds: 100
+}
+instance_group [
+  {
+    kind: KIND_GPU
+    count: 1
+    gpus: [0]
+  }
+]
